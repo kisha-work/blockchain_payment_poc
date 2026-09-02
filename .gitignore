@@ -29,3 +29,19 @@
 
 # Snapshot cheatcodes output
 /snapshots
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.python-version
+
+# Streamlit
+.streamlit/
+
+# Ignition deployment artifacts (chain-specific)
+/ignition/deployments
+
+# OS files
+Thumbs.db
+.DS_Store

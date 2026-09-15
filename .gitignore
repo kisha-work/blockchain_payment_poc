@@ -42,6 +42,9 @@ __pycache__/
 # Ignition deployment artifacts (chain-specific)
 /ignition/deployments
 
+# Auto-generated logs
+python/transaction_log.json
+
 # OS files
 Thumbs.db
 .DS_Store

@@ -1,10 +1,12 @@
-# Sample Hardhat 3 Project (minimal)
+# Blockchain Payment POC
 
-This project has a minimal setup of Hardhat 3, without any plugins.
+A proof-of-concept payment system built on Hardhat 3 (local EVM) with Solidity smart contracts, a Python/Web3.py backend, and a Streamlit web dashboard.
 
 ## What's included?
 
-The project includes native support for TypeScript, Hardhat scripts, tasks, and support for Solidity compilation and tests.
+- Hardhat 3 with native TypeScript support and Hardhat Ignition for deployments
+- Solidity compilation and tests
+- Two contracts: `contracts/payment.sol` (ETH payments) and `contracts/Token.sol` (ERC-20 STC)
 
 
 Complete Flow

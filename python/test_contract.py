@@ -1,11 +1,15 @@
 from web3 import Web3
-from contract_utils import get_web3, get_contract, get_deployed_addresses, to_ether, to_wei
+from contract_utils import (
+    get_web3, get_contract, get_deployed_addresses,
+    to_ether, to_wei, get_network, get_account, get_accounts,
+    send_contract_tx,
+)
+
+network = get_network()
+print(f"Network: {network.upper()}")
 
 w3 = get_web3()
 print("Connected:", w3.is_connected())
-
-accounts = w3.eth.accounts
-print("Available accounts:", accounts[:5])
 
 addresses = get_deployed_addresses()
 payment_addr = addresses["PaymentModule#Payment"]
@@ -17,50 +21,50 @@ print(f"Token contract: {token_addr}")
 payment = get_contract(w3, "Payment", payment_addr)
 token = get_contract(w3, "Token", token_addr)
 
-alice = accounts[1]
-bob = accounts[2]
-print(f"\nAlice: {alice}")
-print(f"Bob: {bob}")
+if network == "sepolia":
+    account = get_account(w3)
+    sender = account.address
+    print(f"\nDeployer/Sender: {sender}")
+    print(f"ETH balance: {to_ether(w3.eth.get_balance(sender))} ETH")
+else:
+    accounts = get_accounts(w3)
+    sender = accounts[0]
+    alice = accounts[1]
+    bob = accounts[2]
+    print(f"Available accounts: {accounts[:3]}")
+    print(f"Deployer: {sender}")
+    print(f"Alice: {alice}")
+    print(f"Bob: {bob}")
 
-alice_balance = w3.eth.get_balance(alice)
-print(f"Alice ETH balance: {to_ether(alice_balance)} ETH")
-
-print("\n--- Sending 1 ETH from Alice to Payment contract ---")
-tx = payment.functions.deposit().transact({"from": alice, "value": to_wei(1)})
+print("\n--- Depositing 0.1 ETH to Payment contract ---")
+tx = send_contract_tx(w3, payment.functions.deposit(), sender, value=to_wei(0.1))
 w3.eth.wait_for_transaction_receipt(tx)
-print(f"Alice contract balance: {to_ether(payment.functions.getBalance(alice).call())} ETH")
-print(f"Contract total balance: {to_ether(payment.functions.getContractBalance().call())} ETH")
-
-print("\n--- Alice pays Bob 0.5 ETH ---")
-tx = payment.functions.pay(bob, to_wei(0.5)).transact({"from": alice})
-w3.eth.wait_for_transaction_receipt(tx)
-print(f"Alice contract balance: {to_ether(payment.functions.getBalance(alice).call())} ETH")
-print(f"Bob contract balance: {to_ether(payment.functions.getBalance(bob).call())} ETH")
-
-print("\n--- Alice withdraws 0.3 ETH ---")
-tx = payment.functions.withdraw(to_wei(0.3)).transact({"from": alice})
-w3.eth.wait_for_transaction_receipt(tx)
-print(f"Alice contract balance: {to_ether(payment.functions.getBalance(alice).call())} ETH")
-print(f"Alice ETH balance: {to_ether(w3.eth.get_balance(alice))} ETH")
+print(f"Contract balance: {to_ether(payment.functions.getContractBalance().call())} ETH")
+print(f"Your contract balance: {to_ether(payment.functions.getBalance(sender).call())} ETH")
 
 print("\n--- Token Info ---")
 print(f"Token name: {token.functions.name().call()}")
 print(f"Token symbol: {token.functions.symbol().call()}")
 print(f"Token total supply: {token.functions.totalSupply().call()}")
-print(f"Alice token balance: {token.functions.balanceOf(alice).call()}")
-print(f"Owner token balance: {token.functions.balanceOf(accounts[0]).call()}")
+print(f"Your token balance: {token.functions.balanceOf(sender).call()}")
 
-print("\n--- Transfer 100 tokens from Owner to Alice ---")
-tx = token.functions.transfer(alice, 100 * 10**18).transact({"from": accounts[0]})
-w3.eth.wait_for_transaction_receipt(tx)
-print(f"Alice token balance: {token.functions.balanceOf(alice).call()}")
-print(f"Owner token balance: {token.functions.balanceOf(accounts[0]).call()}")
+if network == "local":
+    print("\n--- Alice pays Bob 0.05 ETH ---")
+    tx = send_contract_tx(w3, payment.functions.pay(bob, to_wei(0.05)), alice)
+    w3.eth.wait_for_transaction_receipt(tx)
+    print(f"Alice contract balance: {to_ether(payment.functions.getBalance(alice).call())} ETH")
+    print(f"Bob contract balance: {to_ether(payment.functions.getBalance(bob).call())} ETH")
 
-print("\n--- Alice sends 50 tokens to Bob ---")
-tx = token.functions.transfer(bob, 50 * 10**18).transact({"from": alice})
-w3.eth.wait_for_transaction_receipt(tx)
-print(f"Alice token balance: {token.functions.balanceOf(alice).call()}")
-print(f"Bob token balance: {token.functions.balanceOf(bob).call()}")
+    print("\n--- Transfer 100 tokens from Owner to Alice ---")
+    tx = send_contract_tx(w3, token.functions.transfer(alice, 100 * 10**18), sender)
+    w3.eth.wait_for_transaction_receipt(tx)
+    print(f"Alice token balance: {token.functions.balanceOf(alice).call()}")
+
+    print("\n--- Alice sends 50 tokens to Bob ---")
+    tx = send_contract_tx(w3, token.functions.transfer(bob, 50 * 10**18), alice)
+    w3.eth.wait_for_transaction_receipt(tx)
+    print(f"Alice token balance: {token.functions.balanceOf(alice).call()}")
+    print(f"Bob token balance: {token.functions.balanceOf(bob).call()}")
 
 print("\n--- Transaction History ---")
 count = payment.functions.getTransactionCount().call()
